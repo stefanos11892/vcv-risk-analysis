@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import List, Tuple
-from .data_loader import download_data
+from .data_loader import download_prices
 from .risk_metrics import portfolio_returns
 
 
@@ -13,7 +13,7 @@ def historical_stress_test(
     label: str,
 ) -> pd.Series:
     """Return cumulative portfolio return for historical period."""
-    prices = download_data(tickers, start, end)
+    prices = download_prices(tickers, start, end)
     weights = np.array(weights)[: len(prices.columns)]
     weights = weights / weights.sum()
     port_ret = portfolio_returns(prices, weights)
