@@ -2,20 +2,32 @@ import yfinance as yf
 import pandas as pd
 from typing import Iterable
 
-def download_data(tickers: Iterable[str], start: str, end: str) -> pd.DataFrame:
-    """Download adjusted close prices for one or more tickers."""
-    single = isinstance(tickers, str)
-    if single:
-        tickers = [tickers]
+def download_data(
+    tickers: Iterable[str], start: str, end: str, field: str = "Adj Close"
+) -> pd.DataFrame:
+    """Download price data for one or more tickers.
 
-    data = yf.download(list(tickers), start=start, end=end, progress=False)
+    Parameters
+    ----------
+    tickers : Iterable[str] or str
+        Symbols to download.
+    start, end : str
+        Date range for the download.
+    field : str, default "Adj Close"
+        Which price field to return (falls back to ``"Close"`` if unavailable).
+    """
+
+    single = isinstance(tickers, str)
+    tickers_list = [tickers] if single else list(tickers)
+
+    data = yf.download(tickers_list, start=start, end=end, progress=False)
 
     if isinstance(data.columns, pd.MultiIndex):
-        field = "Adj Close" if "Adj Close" in data.columns.levels[0] else "Close"
-        prices = data[field]
+        use_field = field if field in data.columns.levels[0] else "Close"
+        prices = data[use_field]
     else:
-        field = "Adj Close" if "Adj Close" in data.columns else "Close"
-        prices = data[[field]].rename(columns={field: tickers[0]})
+        use_field = field if field in data.columns else "Close"
+        prices = data[[use_field]].rename(columns={use_field: tickers_list[0]})
 
     prices = prices.dropna(how="all")
 
