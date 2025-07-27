@@ -21,8 +21,9 @@ def download_data(
     field : str, default "Adj Close"
         Which price field to return (falls back to ``"Close"`` if unavailable).
     local_path : str, optional
-        If provided, data will be loaded from this CSV if it exists. Otherwise
-        downloaded data will be saved to this path for future use.
+        If provided, data will be loaded from this CSV if it exists. If the
+        online request fails and a file is available, it is used as a fallback.
+        Otherwise downloaded data will be saved to this path for future use.
     """
 
     single = isinstance(tickers, str)
@@ -31,9 +32,17 @@ def download_data(
     if local_path and os.path.exists(local_path):
         data = pd.read_csv(local_path, index_col=0, header=[0, 1], parse_dates=True)
     else:
-        data = yf.download(tickers_list, start=start, end=end, progress=False)
-        if local_path:
-            data.to_csv(local_path)
+        try:
+            data = yf.download(tickers_list, start=start, end=end, progress=False)
+            if local_path:
+                data.to_csv(local_path)
+        except Exception:
+            if local_path and os.path.exists(local_path):
+                data = pd.read_csv(
+                    local_path, index_col=0, header=[0, 1], parse_dates=True
+                )
+            else:
+                raise
 
     if isinstance(data.columns, pd.MultiIndex):
         use_field = field if field in data.columns.levels[0] else "Close"
@@ -43,6 +52,11 @@ def download_data(
         prices = data[[use_field]].rename(columns={use_field: tickers_list[0]})
 
     prices = prices.dropna(how="all")
+
+    if prices.empty:
+        raise ValueError(
+            "No price data available. The download may have failed or returned empty results."
+        )
 
     if single:
         prices.columns = ["Close"]

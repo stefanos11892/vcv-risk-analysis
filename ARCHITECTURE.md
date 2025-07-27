@@ -20,6 +20,6 @@ interfaces or dashboards. Splitting logic this way keeps notebooks lean and
 improves reusability.
 
 The ``download_data`` helper supports an optional ``local_path`` argument to
-cache downloaded Yahoo data to CSV files. If the file exists, it is loaded
-instead of querying the remote API. This allows offline analysis once data has
-been fetched.
+cache downloaded Yahoo data to CSV files. If a request fails and a cached file
+exists, that file will be used instead of raising an error. This allows offline
+analysis once data has been fetched.
